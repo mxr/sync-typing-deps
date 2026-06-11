@@ -155,30 +155,29 @@ fn parse_pyproject_toml(path: &Path) -> Result<Vec<String>, Error> {
         }
     }
 
-    // PEP 735 dependency-groups.dev
-    for item in data
-        .get("dependency-groups")
-        .and_then(|v| v.get("dev"))
-        .and_then(|v| v.as_array())
-        .into_iter()
-        .flatten()
-    {
-        if let Some(s) = item.as_str() {
-            deps.push(s.to_owned());
+    // PEP 735 dependency-groups (all groups)
+    if let Some(groups) = data.get("dependency-groups").and_then(|v| v.as_table()) {
+        for items in groups.values() {
+            for item in items.as_array().into_iter().flatten() {
+                if let Some(s) = item.as_str() {
+                    deps.push(s.to_owned());
+                }
+            }
         }
     }
 
-    // project.optional-dependencies.dev
-    for item in data
+    // project.optional-dependencies (all extras)
+    if let Some(extras) = data
         .get("project")
         .and_then(|v| v.get("optional-dependencies"))
-        .and_then(|v| v.get("dev"))
-        .and_then(|v| v.as_array())
-        .into_iter()
-        .flatten()
+        .and_then(|v| v.as_table())
     {
-        if let Some(s) = item.as_str() {
-            deps.push(s.to_owned());
+        for items in extras.values() {
+            for item in items.as_array().into_iter().flatten() {
+                if let Some(s) = item.as_str() {
+                    deps.push(s.to_owned());
+                }
+            }
         }
     }
 
@@ -393,6 +392,19 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_pyproject_dependency_groups_multiple() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "pyproject.toml",
+            "[dependency-groups]\ntest = [\"pytest>7\", \"coverage\"]\ndocs = [\"sphinx\"]\n",
+        );
+        let mut deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
+        deps.sort();
+        assert_eq!(deps, ["coverage", "pytest>7", "sphinx"]);
+    }
+
+    #[test]
     fn test_parse_pyproject_dependency_groups_non_string_item() {
         // PEP 735 allows {include-group = "..."} table items; non-strings are skipped.
         let dir = TempDir::new().unwrap();
@@ -415,6 +427,19 @@ mod tests {
         );
         let deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
         assert_eq!(deps, ["mypy", "types-requests"]);
+    }
+
+    #[test]
+    fn test_parse_pyproject_optional_deps_multiple() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "pyproject.toml",
+            "[project.optional-dependencies]\ndev = [\"mypy\"]\ntest = [\"pytest\", \"coverage\"]\n",
+        );
+        let mut deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
+        deps.sort();
+        assert_eq!(deps, ["coverage", "mypy", "pytest"]);
     }
 
     #[test]
