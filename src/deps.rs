@@ -560,25 +560,31 @@ mod tests {
         assert_eq!(deps, ["mypy", "requests"]);
     }
 
-    #[test]
-    fn test_dep_name_bare() {
-        assert_eq!(dep_name("covdefaults"), "covdefaults");
-    }
-
-    #[test]
-    fn test_dep_name_with_version() {
-        assert_eq!(dep_name("mypy>=1.0"), "mypy");
-    }
-
-    #[test]
-    fn test_dep_name_with_extras() {
-        assert_eq!(dep_name("mypy[extra]"), "mypy");
+    #[rstest::rstest]
+    #[case("covdefaults", "covdefaults")]
+    #[case("mypy>=1.0", "mypy")]
+    #[case("mypy[extra]", "mypy")]
+    fn test_dep_name(#[case] input: &str, #[case] expected: &str) {
+        assert_eq!(dep_name(input), expected);
     }
 
     #[test]
     fn test_normalize_pkg_name() {
         assert_eq!(normalize_pkg_name("Cov_Defaults"), "cov-defaults");
         assert_eq!(normalize_pkg_name("cov.defaults"), "cov-defaults");
+    }
+
+    #[test]
+    fn test_find_deps_coveragerc_no_plugins_key() {
+        let dir = TempDir::new().unwrap();
+        write(&dir, ".coveragerc", "[run]\nomit = tests/*\n");
+        write(
+            &dir,
+            "setup.cfg",
+            "[options]\ninstall_requires =\n    mypy\n",
+        );
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["mypy"]);
     }
 
     #[rstest::rstest]
