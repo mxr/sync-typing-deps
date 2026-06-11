@@ -433,6 +433,7 @@ name = "sync-typing-deps"
 version = "0.4.0"
 dependencies = [
  "rstest",
+ "serde_json",
  "serde_yaml",
  "tempfile",
  "thiserror",

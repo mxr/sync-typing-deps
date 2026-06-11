@@ -3,6 +3,7 @@ name = "sync-typing-deps"
 path = "src/main.rs"
 
 [dependencies]
+serde_json = "1"
 serde_yaml = "0.9"
 thiserror = "2"
 toml = "0.8"

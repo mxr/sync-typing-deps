@@ -13,6 +13,17 @@ pub fn find_deps(cwd: &Path) -> Result<Vec<String>, Error> {
     if pyproject_toml.exists() {
         deps.extend(parse_pyproject_toml(&pyproject_toml)?);
     }
+    let custom_components = cwd.join("custom_components");
+    if custom_components.is_dir() {
+        for entry in std::fs::read_dir(&custom_components)?.flatten() {
+            if entry.file_type().is_ok_and(|t| t.is_dir()) {
+                let manifest = entry.path().join("manifest.json");
+                if manifest.exists() {
+                    deps.extend(parse_manifest_json(&manifest)?);
+                }
+            }
+        }
+    }
 
     let plugins = find_coverage_plugins(cwd)?;
     if !plugins.is_empty() {
@@ -238,6 +249,23 @@ fn poetry_deps(table: &toml::value::Table) -> Vec<String> {
             Some(v) => format!("{pkg}{v}"),
         })
         .collect()
+}
+
+fn parse_manifest_json(path: &Path) -> Result<Vec<String>, Error> {
+    let content = std::fs::read_to_string(path)?;
+    let data: serde_json::Value = serde_json::from_str(&content)?;
+    let mut deps = Vec::new();
+    for item in data
+        .get("requirements")
+        .and_then(|v| v.as_array())
+        .into_iter()
+        .flatten()
+    {
+        if let Some(s) = item.as_str() {
+            deps.push(s.to_owned());
+        }
+    }
+    Ok(deps)
 }
 
 fn nonempty_lines(s: &str) -> Vec<String> {
@@ -725,5 +753,59 @@ mod tests {
         );
         let deps = find_deps(dir.path()).unwrap();
         assert_eq!(deps, ["mypy"]);
+    }
+
+    #[test]
+    fn test_parse_manifest_json_requirements() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir_all(dir.path().join("custom_components/my_component")).unwrap();
+        fs::write(
+            dir.path()
+                .join("custom_components/my_component/manifest.json"),
+            r#"{"domain":"my_component","requirements":["aiosqlite~=0.21.0","requests>=2.0"]}"#,
+        )
+        .unwrap();
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["aiosqlite~=0.21.0", "requests>=2.0"]);
+    }
+
+    #[test]
+    fn test_parse_manifest_json_no_requirements() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir_all(dir.path().join("custom_components/my_component")).unwrap();
+        fs::write(
+            dir.path()
+                .join("custom_components/my_component/manifest.json"),
+            r#"{"domain":"my_component","version":"1.0.0"}"#,
+        )
+        .unwrap();
+        let deps = find_deps(dir.path()).unwrap();
+        assert!(deps.is_empty());
+    }
+
+    #[test]
+    fn test_parse_manifest_json_invalid() {
+        let path = Path::new("/nonexistent/manifest.json");
+        assert!(parse_manifest_json(path).is_err());
+    }
+
+    #[test]
+    fn test_find_deps_manifest_json_multiple_components() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir_all(dir.path().join("custom_components/comp_a")).unwrap();
+        fs::create_dir_all(dir.path().join("custom_components/comp_b")).unwrap();
+        fs::write(
+            dir.path().join("custom_components/comp_a/manifest.json"),
+            r#"{"domain":"comp_a","requirements":["aiohttp>=3"]}"#,
+        )
+        .unwrap();
+        fs::write(
+            dir.path().join("custom_components/comp_b/manifest.json"),
+            r#"{"domain":"comp_b","requirements":["requests"]}"#,
+        )
+        .unwrap();
+        let mut deps = find_deps(dir.path()).unwrap();
+        deps.sort();
+        assert_eq!(deps, ["aiohttp>=3", "requests"]);
     }
 }
