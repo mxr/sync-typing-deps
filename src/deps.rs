@@ -142,6 +142,19 @@ fn parse_pyproject_toml(path: &Path) -> Result<Vec<String>, Error> {
     let data: toml::Value = toml::from_str(&content)?;
     let mut deps = Vec::new();
 
+    // project.dependencies (PEP 621 runtime deps)
+    for item in data
+        .get("project")
+        .and_then(|v| v.get("dependencies"))
+        .and_then(|v| v.as_array())
+        .into_iter()
+        .flatten()
+    {
+        if let Some(s) = item.as_str() {
+            deps.push(s.to_owned());
+        }
+    }
+
     // PEP 735 dependency-groups.dev
     for item in data
         .get("dependency-groups")
@@ -353,6 +366,18 @@ mod tests {
     fn test_parse_setup_cfg_io_error() {
         let result = parse_setup_cfg(Path::new("/nonexistent/setup.cfg"));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_pyproject_project_dependencies() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "pyproject.toml",
+            "[project]\ndependencies = [\"aiohttp>=3\", \"requests\"]\n",
+        );
+        let deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
+        assert_eq!(deps, ["aiohttp>=3", "requests"]);
     }
 
     #[test]
