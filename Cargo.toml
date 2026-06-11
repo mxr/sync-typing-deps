@@ -1,0 +1,23 @@
+[[bin]]
+name = "sync-typing-deps"
+path = "src/main.rs"
+
+[dependencies]
+serde_yaml = "0.9"
+thiserror = "2"
+toml = "0.8"
+
+[dev-dependencies]
+rstest = "0.24"
+tempfile = "3"
+
+[package]
+categories = ["command-line-utilities", "development-tools"]
+description = "Sync typing hook additional_dependencies from project dev deps"
+edition = "2021"
+keywords = ["mypy", "pre-commit", "ty", "typing"]
+license = "MIT"
+name = "sync-typing-deps"
+readme = "README.md"
+repository = "https://github.com/mxr/sync-typing-deps"
+version = "0.1.0"

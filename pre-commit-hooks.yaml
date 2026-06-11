@@ -1,0 +1,7 @@
+- id: sync-typing-deps
+  name: sync-typing-deps
+  description: Sync typing hook dependencies based on the dev environment
+  entry: sync-typing-deps
+  language: rust
+  files: (^|/)(\.pre-commit-config\.yaml|setup\.cfg|pyproject\.toml|poetry\.lock)$
+  pass_filenames: false
