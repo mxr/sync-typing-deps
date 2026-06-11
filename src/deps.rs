@@ -129,6 +129,19 @@ fn parse_pyproject_toml(path: &Path) -> Result<Vec<String>, Error> {
         deps.extend(poetry_deps(table));
     }
 
+    // build-system.requires (PEP 517)
+    for item in data
+        .get("build-system")
+        .and_then(|v| v.get("requires"))
+        .and_then(|v| v.as_array())
+        .into_iter()
+        .flatten()
+    {
+        if let Some(s) = item.as_str() {
+            deps.push(s.to_owned());
+        }
+    }
+
     Ok(deps)
 }
 
@@ -366,6 +379,30 @@ mod tests {
         );
         let deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
         assert_eq!(deps, ["mypy"]);
+    }
+
+    #[test]
+    fn test_parse_pyproject_build_system_requires() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "pyproject.toml",
+            "[build-system]\nrequires = [\"setuptools\", \"wheel\"]\nbuild-backend = \"setuptools.build_meta\"\n",
+        );
+        let deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
+        assert_eq!(deps, ["setuptools", "wheel"]);
+    }
+
+    #[test]
+    fn test_parse_pyproject_build_system_no_requires() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "pyproject.toml",
+            "[build-system]\nbuild-backend = \"setuptools.build_meta\"\n",
+        );
+        let deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
+        assert!(deps.is_empty());
     }
 
     #[test]
