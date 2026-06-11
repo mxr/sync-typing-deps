@@ -9,10 +9,10 @@ Keeps `additional_dependencies` in your [mypy](https://github.com/pre-commit/mir
 Add to `.pre-commit-config.yaml`:
 
 ```yaml
-- repo: https://github.com/mxr/sync-typing-deps
-  rev: v0.1.0
-  hooks:
-  - id: sync-typing-deps
+-   repo: https://github.com/mxr/sync-typing-deps
+    rev: ''  # Use the sha / tag you want to point at
+    hooks:
+    -   id: sync-typing-deps
 ```
 
 The hook runs automatically when you change `setup.cfg`, `pyproject.toml`, or `.pre-commit-config.yaml`.
