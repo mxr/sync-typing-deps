@@ -155,10 +155,15 @@ fn parse_pyproject_toml(path: &Path) -> Result<Vec<String>, Error> {
         }
     }
 
-    // PEP 735 dependency-groups (all groups)
+    // PEP 735 dependency-groups (dev and test)
     if let Some(groups) = data.get("dependency-groups").and_then(|v| v.as_table()) {
-        for items in groups.values() {
-            for item in items.as_array().into_iter().flatten() {
+        for key in ["dev", "test"] {
+            for item in groups
+                .get(key)
+                .and_then(|v| v.as_array())
+                .into_iter()
+                .flatten()
+            {
                 if let Some(s) = item.as_str() {
                     deps.push(s.to_owned());
                 }
@@ -166,14 +171,19 @@ fn parse_pyproject_toml(path: &Path) -> Result<Vec<String>, Error> {
         }
     }
 
-    // project.optional-dependencies (all extras)
+    // project.optional-dependencies (dev and test)
     if let Some(extras) = data
         .get("project")
         .and_then(|v| v.get("optional-dependencies"))
         .and_then(|v| v.as_table())
     {
-        for items in extras.values() {
-            for item in items.as_array().into_iter().flatten() {
+        for key in ["dev", "test"] {
+            for item in extras
+                .get(key)
+                .and_then(|v| v.as_array())
+                .into_iter()
+                .flatten()
+            {
                 if let Some(s) = item.as_str() {
                     deps.push(s.to_owned());
                 }
@@ -397,11 +407,11 @@ mod tests {
         write(
             &dir,
             "pyproject.toml",
-            "[dependency-groups]\ntest = [\"pytest>7\", \"coverage\"]\ndocs = [\"sphinx\"]\n",
+            "[dependency-groups]\ndev = [\"mypy\"]\ntest = [\"pytest>7\", \"coverage\"]\ndocs = [\"sphinx\"]\n",
         );
         let mut deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
         deps.sort();
-        assert_eq!(deps, ["coverage", "pytest>7", "sphinx"]);
+        assert_eq!(deps, ["coverage", "mypy", "pytest>7"]);
     }
 
     #[test]
@@ -435,7 +445,7 @@ mod tests {
         write(
             &dir,
             "pyproject.toml",
-            "[project.optional-dependencies]\ndev = [\"mypy\"]\ntest = [\"pytest\", \"coverage\"]\n",
+            "[project.optional-dependencies]\ndev = [\"mypy\"]\ntest = [\"pytest\", \"coverage\"]\ndocs = [\"sphinx\"]\n",
         );
         let mut deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
         deps.sort();
