@@ -40,6 +40,19 @@ Exits with code `1` if the config was modified (pre-commit convention), `0` if a
 | `pyproject.toml` | `[tool.poetry.dev-dependencies]` |
 | `pyproject.toml` | `[tool.poetry.group.dev.dependencies]` |
 
+## Coverage plugin exclusion
+
+Dependencies listed as coverage plugins are automatically excluded from `additional_dependencies`. Coverage plugins are not type-checking tools and should not be injected into mypy/ty hooks.
+
+Plugin names are read from:
+
+| File | Section / key |
+|------|---------------|
+| `.coveragerc` | `[run] plugins` |
+| `setup.cfg` | `[coverage:run] plugins` |
+| `tox.ini` | `[coverage:run] plugins` |
+| `pyproject.toml` | `[tool.coverage.run] plugins` |
+
 ## How it works
 
 Hooks matched:

@@ -13,7 +13,75 @@ pub fn find_deps(cwd: &Path) -> Result<Vec<String>, Error> {
     if pyproject_toml.exists() {
         deps.extend(parse_pyproject_toml(&pyproject_toml)?);
     }
+
+    let plugins = find_coverage_plugins(cwd)?;
+    if !plugins.is_empty() {
+        deps.retain(|dep| {
+            let name = normalize_pkg_name(dep_name(dep));
+            !plugins.contains(&name)
+        });
+    }
+
     Ok(deps)
+}
+
+fn dep_name(dep: &str) -> &str {
+    dep.find(['>', '<', '=', '!', '~', '^', ',', ';', ' ', '['])
+        .map_or(dep, |i| &dep[..i])
+}
+
+fn normalize_pkg_name(name: &str) -> String {
+    name.to_lowercase().replace(['-', '_', '.'], "-")
+}
+
+fn find_coverage_plugins(cwd: &Path) -> Result<std::collections::HashSet<String>, Error> {
+    let mut plugins = std::collections::HashSet::new();
+
+    for name in [".coveragerc", "setup.cfg", "tox.ini"] {
+        let path = cwd.join(name);
+        if path.exists() {
+            let content = std::fs::read_to_string(&path)?;
+            let sections = parse_ini(&content);
+            if let Some(val) = sections.get("coverage:run").and_then(|s| s.get("plugins")) {
+                plugins.extend(
+                    nonempty_lines(val)
+                        .into_iter()
+                        .map(|p| normalize_pkg_name(&p)),
+                );
+            }
+            // .coveragerc uses [run] not [coverage:run]
+            if name == ".coveragerc" {
+                if let Some(val) = sections.get("run").and_then(|s| s.get("plugins")) {
+                    plugins.extend(
+                        nonempty_lines(val)
+                            .into_iter()
+                            .map(|p| normalize_pkg_name(&p)),
+                    );
+                }
+            }
+        }
+    }
+
+    let pyproject_toml = cwd.join("pyproject.toml");
+    if pyproject_toml.exists() {
+        let content = std::fs::read_to_string(&pyproject_toml)?;
+        let data: toml::Value = toml::from_str(&content)?;
+        for item in data
+            .get("tool")
+            .and_then(|v| v.get("coverage"))
+            .and_then(|v| v.get("run"))
+            .and_then(|v| v.get("plugins"))
+            .and_then(|v| v.as_array())
+            .into_iter()
+            .flatten()
+        {
+            if let Some(s) = item.as_str() {
+                plugins.insert(normalize_pkg_name(s));
+            }
+        }
+    }
+
+    Ok(plugins)
 }
 
 fn parse_setup_cfg(path: &Path) -> Result<Vec<String>, Error> {
@@ -490,5 +558,112 @@ mod tests {
         let mut deps = find_deps(dir.path()).unwrap();
         deps.sort();
         assert_eq!(deps, ["mypy", "requests"]);
+    }
+
+    #[test]
+    fn test_dep_name_bare() {
+        assert_eq!(dep_name("covdefaults"), "covdefaults");
+    }
+
+    #[test]
+    fn test_dep_name_with_version() {
+        assert_eq!(dep_name("mypy>=1.0"), "mypy");
+    }
+
+    #[test]
+    fn test_dep_name_with_extras() {
+        assert_eq!(dep_name("mypy[extra]"), "mypy");
+    }
+
+    #[test]
+    fn test_normalize_pkg_name() {
+        assert_eq!(normalize_pkg_name("Cov_Defaults"), "cov-defaults");
+        assert_eq!(normalize_pkg_name("cov.defaults"), "cov-defaults");
+    }
+
+    #[rstest::rstest]
+    #[case(".coveragerc", "[run]\nplugins = covdefaults\n")]
+    #[case("tox.ini", "[coverage:run]\nplugins = covdefaults\n")]
+    fn test_find_deps_excludes_coverage_plugin_separate_file(
+        #[case] config_file: &str,
+        #[case] config_content: &str,
+    ) {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "setup.cfg",
+            "[options]\ninstall_requires =\n    mypy\n    covdefaults\n",
+        );
+        write(&dir, config_file, config_content);
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["mypy"]);
+    }
+
+    #[test]
+    fn test_find_deps_excludes_coverage_plugin_setup_cfg() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "setup.cfg",
+            "[options]\ninstall_requires =\n    mypy\n    covdefaults\n\n[coverage:run]\nplugins = covdefaults\n",
+        );
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["mypy"]);
+    }
+
+    #[test]
+    fn test_find_deps_excludes_coverage_plugin_pyproject() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "pyproject.toml",
+            "[dependency-groups]\ndev = [\"mypy\", \"covdefaults\"]\n\n[tool.coverage.run]\nplugins = [\"covdefaults\"]\n",
+        );
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["mypy"]);
+    }
+
+    #[test]
+    fn test_find_deps_excludes_coverage_plugin_multiline() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            ".coveragerc",
+            "[run]\nplugins =\n    covdefaults\n    other-plugin\n",
+        );
+        write(
+            &dir,
+            "setup.cfg",
+            "[options]\ninstall_requires =\n    mypy\n    covdefaults\n    other-plugin\n    requests\n",
+        );
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["mypy", "requests"]);
+    }
+
+    #[test]
+    fn test_find_deps_excludes_plugin_with_version_specifier() {
+        let dir = TempDir::new().unwrap();
+        write(&dir, ".coveragerc", "[run]\nplugins = covdefaults\n");
+        write(
+            &dir,
+            "setup.cfg",
+            "[options]\ninstall_requires =\n    mypy\n    covdefaults>=1.0\n",
+        );
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["mypy"]);
+    }
+
+    #[test]
+    fn test_find_deps_excludes_plugin_name_normalization() {
+        // Plugin declared as "cov_defaults", dep listed as "cov-defaults" — same after normalize.
+        let dir = TempDir::new().unwrap();
+        write(&dir, ".coveragerc", "[run]\nplugins = cov_defaults\n");
+        write(
+            &dir,
+            "setup.cfg",
+            "[options]\ninstall_requires =\n    mypy\n    cov-defaults\n",
+        );
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["mypy"]);
     }
 }
