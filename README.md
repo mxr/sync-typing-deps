@@ -34,6 +34,7 @@ Exits with code `1` if the config was modified (pre-commit convention), `0` if a
 | File | Keys read |
 |------|-----------|
 | `setup.cfg` | `[options] install_requires`, `[options.extras_require] *` |
+| `pyproject.toml` | `[project] dependencies` (PEP 621) |
 | `pyproject.toml` | `[build-system] requires` (PEP 517) |
 | `pyproject.toml` | `[dependency-groups] dev` (PEP 735) |
 | `pyproject.toml` | `[project.optional-dependencies] dev` |
