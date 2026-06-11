@@ -37,27 +37,21 @@ fn normalize_pkg_name(name: &str) -> String {
 fn find_coverage_plugins(cwd: &Path) -> Result<std::collections::HashSet<String>, Error> {
     let mut plugins = std::collections::HashSet::new();
 
-    for name in [".coveragerc", "setup.cfg", "tox.ini"] {
+    for (name, section) in [
+        (".coveragerc", "run"),
+        ("setup.cfg", "coverage:run"),
+        ("tox.ini", "coverage:run"),
+    ] {
         let path = cwd.join(name);
         if path.exists() {
             let content = std::fs::read_to_string(&path)?;
             let sections = parse_ini(&content);
-            if let Some(val) = sections.get("coverage:run").and_then(|s| s.get("plugins")) {
+            if let Some(val) = sections.get(section).and_then(|s| s.get("plugins")) {
                 plugins.extend(
                     nonempty_lines(val)
                         .into_iter()
                         .map(|p| normalize_pkg_name(&p)),
                 );
-            }
-            // .coveragerc uses [run] not [coverage:run]
-            if name == ".coveragerc" {
-                if let Some(val) = sections.get("run").and_then(|s| s.get("plugins")) {
-                    plugins.extend(
-                        nonempty_lines(val)
-                            .into_iter()
-                            .map(|p| normalize_pkg_name(&p)),
-                    );
-                }
             }
         }
     }
