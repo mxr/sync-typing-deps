@@ -3,10 +3,7 @@ use std::path::Path;
 use crate::Error;
 
 pub fn is_typing_hook(repo_url: &str, hook_id: &str) -> bool {
-    hook_id == "mypy"
-        || hook_id == "ty"
-        || repo_url.contains("mirrors-mypy")
-        || repo_url.contains("mirrors-ty")
+    hook_id == "mypy" || repo_url.contains("mirrors-mypy")
 }
 
 pub fn update_config(config_path: &Path, deps: &[String]) -> Result<bool, Error> {
@@ -161,9 +158,7 @@ mod tests {
 
     #[rstest]
     #[case("https://github.com/pre-commit/mirrors-mypy", "mypy", true)]
-    #[case("https://example.com/some-repo", "ty", true)]
     #[case("https://github.com/pre-commit/mirrors-mypy", "check-something", true)]
-    #[case("https://github.com/pre-commit/mirrors-ty", "check-something", true)]
     #[case("https://github.com/pre-commit/pre-commit-hooks", "check-json", false)]
     fn test_is_typing_hook(#[case] url: &str, #[case] id: &str, #[case] expected: bool) {
         assert_eq!(is_typing_hook(url, id), expected);
@@ -216,7 +211,7 @@ mod tests {
 
     #[test]
     fn test_rewrite_url_based_hook_matching() {
-        // Hook matched by repo URL even when id is not "mypy" or "ty".
+        // Hook matched by repo URL even when id is not "mypy".
         let input = "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy-custom\n";
         let out = rewrite_additional_deps(input, &["dep".to_owned()]);
         assert!(out.contains("    additional_dependencies:\n    - dep\n"));
@@ -365,22 +360,6 @@ mod tests {
         let a_pos = content.find("a-dep").unwrap();
         let z_pos = content.find("z-dep").unwrap();
         assert!(a_pos < z_pos, "deps should be sorted alphabetically");
-    }
-
-    #[test]
-    fn test_update_config_updates_ty_hook() {
-        let dir = TempDir::new().unwrap();
-        write(
-            &dir,
-            ".pre-commit-config.yaml",
-            "repos:\n- repo: https://github.com/pre-commit/mirrors-ty\n  rev: v0.0.1\n  hooks:\n  - id: ty\n",
-        );
-        let updated = update_config(
-            &dir.path().join(".pre-commit-config.yaml"),
-            &["mypy>=1.0".to_owned()],
-        )
-        .unwrap();
-        assert!(updated);
     }
 
     #[test]
