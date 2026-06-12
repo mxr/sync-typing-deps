@@ -802,6 +802,23 @@ mod tests {
     }
 
     #[test]
+    fn test_find_deps_custom_components_subdir_no_manifest() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir_all(dir.path().join("custom_components/no_manifest")).unwrap();
+        let deps = find_deps(dir.path()).unwrap();
+        assert!(deps.is_empty());
+    }
+
+    #[test]
+    fn test_find_deps_custom_components_file_not_dir() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir(dir.path().join("custom_components")).unwrap();
+        fs::write(dir.path().join("custom_components/not_a_dir"), "").unwrap();
+        let deps = find_deps(dir.path()).unwrap();
+        assert!(deps.is_empty());
+    }
+
+    #[test]
     fn test_find_deps_homeassistant_replaced_with_stubs() {
         let dir = TempDir::new().unwrap();
         fs::create_dir_all(dir.path().join("custom_components/my_component")).unwrap();
