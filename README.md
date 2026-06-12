@@ -1,6 +1,6 @@
 # sync-typing-deps
 
-Keeps `additional_dependencies` in your [mypy](https://github.com/pre-commit/mirrors-mypy) pre-commit hook in sync with your project's dev dependencies.
+Keeps `additional_dependencies` in your [mypy](https://github.com/pre-commit/mirrors-mypy) and [ty](https://github.com/mxr/mirrors-ty) pre-commit hooks in sync with your project's dev dependencies.
 
 ## Usage
 
@@ -60,6 +60,8 @@ Plugin names are read from:
 Hooks matched:
 
 - `id: mypy` (any repo)
+- `id: ty` (any repo)
 - Any hook in a repo whose URL contains `mirrors-mypy`
+- Any hook in a repo whose URL contains `mirrors-ty`
 
 `additional_dependencies` is rewritten as a sorted block list. Comments and unrelated YAML formatting are preserved.
