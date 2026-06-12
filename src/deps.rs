@@ -3,6 +3,8 @@ use std::path::Path;
 
 use crate::Error;
 
+const TYPING_SUBSTITUTIONS: &[(&str, &str)] = &[("homeassistant", "homeassistant-stubs")];
+
 pub fn find_deps(cwd: &Path) -> Result<Vec<String>, Error> {
     let mut deps = Vec::new();
     let setup_cfg = cwd.join("setup.cfg");
@@ -21,6 +23,16 @@ pub fn find_deps(cwd: &Path) -> Result<Vec<String>, Error> {
                 if manifest.exists() {
                     deps.extend(parse_manifest_json(&manifest)?);
                 }
+            }
+        }
+    }
+
+    for dep in &mut deps {
+        let name = normalize_pkg_name(dep_name(dep));
+        for &(from, to) in TYPING_SUBSTITUTIONS {
+            if name == from {
+                *dep = to.to_owned();
+                break;
             }
         }
     }
@@ -787,6 +799,21 @@ mod tests {
     fn test_parse_manifest_json_invalid() {
         let path = Path::new("/nonexistent/manifest.json");
         assert!(parse_manifest_json(path).is_err());
+    }
+
+    #[test]
+    fn test_find_deps_homeassistant_replaced_with_stubs() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir_all(dir.path().join("custom_components/my_component")).unwrap();
+        fs::write(
+            dir.path()
+                .join("custom_components/my_component/manifest.json"),
+            r#"{"domain":"my_component","requirements":["homeassistant>=2024.1","aiohttp>=3"]}"#,
+        )
+        .unwrap();
+        let mut deps = find_deps(dir.path()).unwrap();
+        deps.sort();
+        assert_eq!(deps, ["aiohttp>=3", "homeassistant-stubs"]);
     }
 
     #[test]
