@@ -40,6 +40,7 @@ Exits with code `1` if the config was modified (pre-commit convention), `0` if a
 | `pyproject.toml` | `[project.optional-dependencies] dev`, `test` |
 | `pyproject.toml` | `[tool.poetry.dev-dependencies]` |
 | `pyproject.toml` | `[tool.poetry.group.dev.dependencies]` |
+| `custom_components/*/manifest.json` | `requirements` |
 
 ## Coverage plugin exclusion
 
