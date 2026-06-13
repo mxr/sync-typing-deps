@@ -135,6 +135,9 @@ fn rewrite_additional_deps(content: &str, sorted_deps: &[String]) -> String {
 }
 
 fn inject_deps(out: &mut Vec<String>, indent: usize, sorted_deps: &[String]) {
+    if sorted_deps.is_empty() {
+        return;
+    }
     let prefix = " ".repeat(indent);
     out.push(format!("{prefix}additional_dependencies:"));
     for dep in sorted_deps {
@@ -174,7 +177,7 @@ mod tests {
     fn test_inject_deps_empty() {
         let mut out = Vec::new();
         inject_deps(&mut out, 4, &[]);
-        assert_eq!(out, ["    additional_dependencies:"]);
+        assert!(out.is_empty());
     }
 
     #[test]
@@ -290,11 +293,18 @@ mod tests {
     }
 
     #[test]
-    fn test_rewrite_empty_deps_replaces_block() {
+    fn test_rewrite_empty_deps_removes_block() {
         let input = mypy_config("    additional_dependencies:\n    - old\n");
         let out = rewrite_additional_deps(&input, &[]);
-        assert!(out.contains("    additional_dependencies:\n"));
+        assert!(!out.contains("additional_dependencies:"));
         assert!(!out.contains("old"));
+    }
+
+    #[test]
+    fn test_rewrite_empty_deps_no_block_added() {
+        let input = mypy_config("");
+        let out = rewrite_additional_deps(&input, &[]);
+        assert!(!out.contains("additional_dependencies:"));
     }
 
     #[test]
