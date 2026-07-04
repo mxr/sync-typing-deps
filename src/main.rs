@@ -66,7 +66,7 @@ mod tests {
 
     use super::*;
 
-    fn args(v: &[&str]) -> impl Iterator<Item = String> {
+    fn string_args(v: &[&str]) -> impl Iterator<Item = String> {
         v.iter()
             .map(|s| (*s).to_owned())
             .collect::<Vec<_>>()
@@ -77,39 +77,39 @@ mod tests {
 
     #[test]
     fn test_parse_args_defaults() {
-        let a = parse_args(args(&[])).unwrap();
+        let a = parse_args(string_args(&[])).unwrap();
         assert_eq!(a.config, PathBuf::from(".pre-commit-config.yaml"));
         assert_eq!(a.dir, PathBuf::from("."));
     }
 
     #[test]
     fn test_parse_args_long_config() {
-        let a = parse_args(args(&["--config", "my.yaml"])).unwrap();
+        let a = parse_args(string_args(&["--config", "my.yaml"])).unwrap();
         assert_eq!(a.config, PathBuf::from("my.yaml"));
     }
 
     #[test]
     fn test_parse_args_short_config() {
-        let a = parse_args(args(&["-c", "my.yaml"])).unwrap();
+        let a = parse_args(string_args(&["-c", "my.yaml"])).unwrap();
         assert_eq!(a.config, PathBuf::from("my.yaml"));
     }
 
     #[test]
     fn test_parse_args_long_dir() {
-        let a = parse_args(args(&["--dir", "/some/path"])).unwrap();
+        let a = parse_args(string_args(&["--dir", "/some/path"])).unwrap();
         assert_eq!(a.dir, PathBuf::from("/some/path"));
     }
 
     #[test]
     fn test_parse_args_short_dir() {
-        let a = parse_args(args(&["-d", "/some/path"])).unwrap();
+        let a = parse_args(string_args(&["-d", "/some/path"])).unwrap();
         assert_eq!(a.dir, PathBuf::from("/some/path"));
     }
 
     #[test]
     fn test_parse_args_config_missing_value() {
         assert_eq!(
-            parse_args(args(&["--config"])).unwrap_err(),
+            parse_args(string_args(&["--config"])).unwrap_err(),
             "--config requires a value"
         );
     }
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn test_parse_args_dir_missing_value() {
         assert_eq!(
-            parse_args(args(&["--dir"])).unwrap_err(),
+            parse_args(string_args(&["--dir"])).unwrap_err(),
             "--dir requires a value"
         );
     }
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn test_parse_args_unknown_arg() {
         assert_eq!(
-            parse_args(args(&["--unknown"])).unwrap_err(),
+            parse_args(string_args(&["--unknown"])).unwrap_err(),
             "unknown argument: --unknown"
         );
     }

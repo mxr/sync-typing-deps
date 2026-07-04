@@ -108,10 +108,6 @@ fn bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_sync-typing-deps"))
 }
 
-fn write_bin(dir: &TempDir, name: &str, content: &str) {
-    fs::write(dir.path().join(name), content).unwrap();
-}
-
 #[test]
 fn test_main_unknown_arg_exits_failure() {
     let status = bin().arg("--unknown").status().unwrap();
@@ -121,12 +117,12 @@ fn test_main_unknown_arg_exits_failure() {
 #[test]
 fn test_main_file_modified_exits_failure() {
     let dir = TempDir::new().unwrap();
-    write_bin(
+    write(
         &dir,
         "pyproject.toml",
         "[dependency-groups]\ndev = [\"mypy>=1.0\"]\n",
     );
-    write_bin(
+    write(
         &dir,
         ".pre-commit-config.yaml",
         "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n",
@@ -144,12 +140,12 @@ fn test_main_file_modified_exits_failure() {
 #[test]
 fn test_main_no_change_exits_success() {
     let dir = TempDir::new().unwrap();
-    write_bin(
+    write(
         &dir,
         "pyproject.toml",
         "[dependency-groups]\ndev = [\"mypy>=1.0\"]\n",
     );
-    write_bin(
+    write(
         &dir,
         ".pre-commit-config.yaml",
         "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n    additional_dependencies:\n    - mypy>=1.0\n",
@@ -169,7 +165,7 @@ fn test_main_run_error_exits_failure() {
     let dir = TempDir::new().unwrap();
     // setup.cfg as a directory triggers an IO error in find_deps
     fs::create_dir(dir.path().join("setup.cfg")).unwrap();
-    write_bin(
+    write(
         &dir,
         ".pre-commit-config.yaml",
         "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n",
