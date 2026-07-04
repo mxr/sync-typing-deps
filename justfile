@@ -14,7 +14,7 @@ cov-html: _install-llvm-cov
     cargo llvm-cov --locked --open --ignore-filename-regex 'src/main\.rs'
 
 lint:
-    cargo clippy -- -D warnings
+    cargo clippy --all-targets --locked -- -D warnings -D clippy::pedantic -D clippy::nursery -D clippy::cargo
 
 fmt:
     cargo fmt

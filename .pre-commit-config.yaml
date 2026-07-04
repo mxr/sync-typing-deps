@@ -22,6 +22,18 @@ repos:
   hooks:
   - id: fmt
   - id: clippy
+    args:
+    - --all-targets
+    - --locked
+    - --
+    - -D
+    - warnings
+    - -D
+    - clippy::pedantic
+    - -D
+    - clippy::nursery
+    - -D
+    - clippy::cargo
 - repo: https://github.com/zizmorcore/zizmor-pre-commit
   rev: e3eebf65325ccc992422292cb7a4baee967cf815  # frozen: v1.26.1
   hooks:
