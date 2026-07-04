@@ -283,7 +283,18 @@ mod tests {
 
     #[test]
     fn test_rewrite_preserves_comments() {
-        let input = "# top comment\nrepos:\n# repo comment\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n    additional_dependencies:\n    - old\n".to_string();
+        let input = concat!(
+            "# top comment\n",
+            "repos:\n",
+            "# repo comment\n",
+            "- repo: https://github.com/pre-commit/mirrors-mypy\n",
+            "  rev: v1.0.0\n",
+            "  hooks:\n",
+            "  - id: mypy\n",
+            "    additional_dependencies:\n",
+            "    - old\n",
+        )
+        .to_string();
         let out = rewrite_additional_deps(&input, &["new".to_owned()]);
         assert!(out.starts_with("# top comment\n"));
         assert!(out.contains("# repo comment\n"));
