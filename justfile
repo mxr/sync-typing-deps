@@ -8,10 +8,10 @@ _install-llvm-cov:
     cargo install cargo-llvm-cov
 
 cov: _install-llvm-cov
-    cargo llvm-cov --locked --fail-under-lines 100 --ignore-filename-regex 'src/main\.rs'
+    cargo llvm-cov --locked --fail-under-lines 100
 
 cov-html: _install-llvm-cov
-    cargo llvm-cov --locked --fail-under-lines 100 --open --ignore-filename-regex 'src/main\.rs'
+    cargo llvm-cov --locked --fail-under-lines 100
 
 build:
     cargo build --locked
