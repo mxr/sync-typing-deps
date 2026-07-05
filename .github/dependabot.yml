@@ -3,7 +3,7 @@ version: 2
 multi-ecosystem-groups:
   default:
     schedule:
-      interval: daily
+      interval: every day at 7am
 
 updates:
 - package-ecosystem: github-actions
