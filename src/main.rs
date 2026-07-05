@@ -1,3 +1,5 @@
+#![deny(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+
 use std::path::PathBuf;
 use std::process::ExitCode;
 

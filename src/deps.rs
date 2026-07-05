@@ -5,6 +5,12 @@ use crate::Error;
 
 const TYPING_SUBSTITUTIONS: &[(&str, &str)] = &[("homeassistant", "homeassistant-stubs")];
 
+/// Find dependency strings from the supported project metadata files in `cwd`.
+///
+/// # Errors
+///
+/// Returns an error when a supported dependency source exists but cannot be
+/// read or parsed.
 pub fn find_deps(cwd: &Path) -> Result<Vec<String>, Error> {
     let mut deps = Vec::new();
     let setup_cfg = cwd.join("setup.cfg");
@@ -31,7 +37,7 @@ pub fn find_deps(cwd: &Path) -> Result<Vec<String>, Error> {
         let name = normalize_pkg_name(dep_name(dep));
         for &(from, to) in TYPING_SUBSTITUTIONS {
             if name == from {
-                *dep = to.to_owned();
+                to.clone_into(dep);
                 break;
             }
         }
