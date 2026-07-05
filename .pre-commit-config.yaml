@@ -1,5 +1,5 @@
 ci:
-  skip: [fmt, clippy] # rust isnt available in CI
+  skip: [clippy] # runs via GHA to avoid keeping deps in-sync here
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -17,6 +17,10 @@ repos:
     exclude: Cargo.lock
   - id: pretty-format-yaml
     args: [--autofix]
+- repo: https://github.com/AndrejOrsula/pre-commit-cargo
+  rev: 33ae92ed9b1a4392c8ac5fdef46887640d866e1e  # frozen: 0.5.0
+  hooks:
+  - id: cargo-fmt
 - repo: https://github.com/doublify/pre-commit-rust
   rev: eeee35a89e69d5772bdee97db1a6a898467b686e  # frozen: v1.0
   hooks:
