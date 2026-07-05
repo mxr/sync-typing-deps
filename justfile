@@ -11,13 +11,7 @@ cov: _install-llvm-cov
     cargo llvm-cov --locked --fail-under-lines 100 --ignore-filename-regex 'src/main\.rs'
 
 cov-html: _install-llvm-cov
-    cargo llvm-cov --locked --open --ignore-filename-regex 'src/main\.rs'
-
-lint:
-    cargo clippy --all-targets --locked -- -D warnings -D clippy::pedantic -D clippy::nursery -D clippy::cargo
-
-fmt:
-    cargo fmt
+    cargo llvm-cov --locked --fail-under-lines 100 --open --ignore-filename-regex 'src/main\.rs'
 
 build:
     cargo build --locked
