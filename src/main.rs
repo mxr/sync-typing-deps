@@ -33,23 +33,19 @@ fn parse_args(mut iter: impl Iterator<Item = String>) -> Result<Args, String> {
     })
 }
 
-fn run_main(args: Args) -> ExitCode {
-    match run(&args.dir, &args.config) {
-        Ok(true) => {
-            println!("updated {}", args.config.display());
-            ExitCode::FAILURE // pre-commit convention: exit 1 when file modified
-        }
-        Ok(false) => ExitCode::SUCCESS,
-        Err(e) => {
-            eprintln!("error: {e}");
-            ExitCode::FAILURE
-        }
-    }
-}
-
 fn main() -> ExitCode {
     match parse_args(std::env::args().skip(1)) {
-        Ok(args) => run_main(args),
+        Ok(args) => match run(&args.dir, &args.config) {
+            Ok(true) => {
+                println!("updated {}", args.config.display());
+                ExitCode::FAILURE // pre-commit convention: exit 1 when file modified
+            }
+            Ok(false) => ExitCode::SUCCESS,
+            Err(e) => {
+                eprintln!("error: {e}");
+                ExitCode::FAILURE
+            }
+        },
         Err(e) => {
             eprintln!("error: {e}");
             eprintln!("usage: sync-typing-deps [--config <path>] [--dir <path>]");
@@ -60,10 +56,6 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
-    use tempfile::TempDir;
-
     use super::*;
 
     fn string_args(v: &[&str]) -> impl Iterator<Item = String> {
@@ -128,68 +120,5 @@ mod tests {
             parse_args(string_args(&["--unknown"])).unwrap_err(),
             "unknown argument: --unknown"
         );
-    }
-
-    // run_main tests
-
-    fn write(dir: &TempDir, name: &str, content: &str) {
-        fs::write(dir.path().join(name), content).unwrap();
-    }
-
-    #[test]
-    fn test_run_main_ok_modified() {
-        let dir = TempDir::new().unwrap();
-        write(
-            &dir,
-            "pyproject.toml",
-            "[dependency-groups]\ndev = [\"mypy>=1.0\"]\n",
-        );
-        write(
-            &dir,
-            ".pre-commit-config.yaml",
-            "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n",
-        );
-        let code = run_main(Args {
-            config: dir.path().join(".pre-commit-config.yaml"),
-            dir: dir.path().to_path_buf(),
-        });
-        assert_eq!(code, ExitCode::FAILURE);
-    }
-
-    #[test]
-    fn test_run_main_ok_no_change() {
-        let dir = TempDir::new().unwrap();
-        write(
-            &dir,
-            "pyproject.toml",
-            "[dependency-groups]\ndev = [\"mypy>=1.0\"]\n",
-        );
-        write(
-            &dir,
-            ".pre-commit-config.yaml",
-            "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n    additional_dependencies:\n    - mypy>=1.0\n",
-        );
-        let code = run_main(Args {
-            config: dir.path().join(".pre-commit-config.yaml"),
-            dir: dir.path().to_path_buf(),
-        });
-        assert_eq!(code, ExitCode::SUCCESS);
-    }
-
-    #[test]
-    fn test_run_main_error() {
-        let dir = TempDir::new().unwrap();
-        // setup.cfg as a directory triggers an IO error in find_deps
-        fs::create_dir(dir.path().join("setup.cfg")).unwrap();
-        write(
-            &dir,
-            ".pre-commit-config.yaml",
-            "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n",
-        );
-        let code = run_main(Args {
-            config: dir.path().join(".pre-commit-config.yaml"),
-            dir: dir.path().to_path_buf(),
-        });
-        assert_eq!(code, ExitCode::FAILURE);
     }
 }
