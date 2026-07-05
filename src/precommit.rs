@@ -248,30 +248,15 @@ mod tests {
         assert!(out.contains("    - a\n    - z\n"));
     }
 
-    #[test]
-    fn test_rewrite_replaces_compact_notation() {
-        // Compact notation: deps at same indent as key.
-        let input = mypy_config("    additional_dependencies:\n    - old\n");
+    #[rstest]
+    #[case("    additional_dependencies:\n    - old\n", "old")]
+    #[case("    additional_dependencies:\n      - old\n", "old")]
+    #[case("    additional_dependencies: [old-dep]\n", "old-dep")]
+    fn test_rewrite_replaces_existing_dep(#[case] extra: &str, #[case] old_dep: &str) {
+        let input = mypy_config(extra);
         let out = rewrite_additional_deps(&input, &["new".to_owned()]);
         assert!(out.contains("    additional_dependencies:\n    - new\n"));
-        assert!(!out.contains("old"));
-    }
-
-    #[test]
-    fn test_rewrite_replaces_indented_notation() {
-        // Standard notation: deps indented 2 more than key.
-        let input = mypy_config("    additional_dependencies:\n      - old\n");
-        let out = rewrite_additional_deps(&input, &["new".to_owned()]);
-        assert!(out.contains("    additional_dependencies:\n    - new\n"));
-        assert!(!out.contains("old"));
-    }
-
-    #[test]
-    fn test_rewrite_replaces_flow_style() {
-        let input = mypy_config("    additional_dependencies: [old-dep]\n");
-        let out = rewrite_additional_deps(&input, &["new".to_owned()]);
-        assert!(out.contains("    additional_dependencies:\n    - new\n"));
-        assert!(!out.contains("old-dep"));
+        assert!(!out.contains(old_dep));
     }
 
     #[test]
@@ -308,34 +293,28 @@ mod tests {
         assert_eq!(out, input);
     }
 
-    #[test]
-    fn test_rewrite_empty_deps_removes_block() {
-        let input = mypy_config("    additional_dependencies:\n    - old\n");
+    #[rstest]
+    #[case("    additional_dependencies:\n    - old\n")]
+    #[case("")]
+    fn test_rewrite_empty_deps(#[case] extra: &str) {
+        let input = mypy_config(extra);
         let out = rewrite_additional_deps(&input, &[]);
         assert!(!out.contains("additional_dependencies:"));
         assert!(!out.contains("old"));
     }
 
-    #[test]
-    fn test_rewrite_empty_deps_no_block_added() {
-        let input = mypy_config("");
-        let out = rewrite_additional_deps(&input, &[]);
-        assert!(!out.contains("additional_dependencies:"));
-    }
-
-    #[test]
-    fn test_rewrite_preserves_trailing_newline() {
-        let input = mypy_config("");
-        assert!(input.ends_with('\n'));
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn test_rewrite_trailing_newline(#[case] has_trailing_newline: bool) {
+        let base = mypy_config("");
+        let input = if has_trailing_newline {
+            base
+        } else {
+            base.trim_end_matches('\n').to_owned()
+        };
         let out = rewrite_additional_deps(&input, &["dep".to_owned()]);
-        assert!(out.ends_with('\n'));
-    }
-
-    #[test]
-    fn test_rewrite_no_trailing_newline() {
-        let input = mypy_config("").trim_end_matches('\n').to_owned();
-        let out = rewrite_additional_deps(&input, &["dep".to_owned()]);
-        assert!(!out.ends_with('\n'));
+        assert_eq!(out.ends_with('\n'), has_trailing_newline);
     }
 
     #[test]
