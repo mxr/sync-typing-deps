@@ -1,12 +1,25 @@
 version: 2
+
+multi-ecosystem-groups:
+  all:
+    schedule:
+      interval: daily
+    cooldown:
+      default-days: 7
+
 updates:
 - package-ecosystem: github-actions
   directory: /
-  schedule:
-    interval: daily
   groups:
     github-actions:
       patterns:
       - '*'
-  cooldown:
-    default-days: 7
+  multi-ecosystem-group: all
+
+- package-ecosystem: cargo
+  directory: /
+  groups:
+    cargo:
+      patterns:
+      - '*'
+  multi-ecosystem-group: all
