@@ -98,10 +98,7 @@ mod tests {
     #[case("--config", "--config requires a value")]
     #[case("--dir", "--dir requires a value")]
     fn test_parse_args_missing_value(#[case] arg: &str, #[case] expected_err: &str) {
-        assert_eq!(
-            parse_args(string_args(&[arg])).unwrap_err(),
-            expected_err
-        );
+        assert_eq!(parse_args(string_args(&[arg])).unwrap_err(), expected_err);
     }
 
     #[test]
