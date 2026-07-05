@@ -104,13 +104,13 @@ fn test_run_idempotent() {
 
 // Binary invocation tests – these cover fn main() paths.
 
-fn bin() -> Command {
+fn create_test_command() -> Command {
     Command::new(env!("CARGO_BIN_EXE_sync-typing-deps"))
 }
 
 #[test]
 fn test_main_unknown_arg_exits_failure() {
-    let status = bin().arg("--unknown").status().unwrap();
+    let status = create_test_command().arg("--unknown").status().unwrap();
     assert!(!status.success());
 }
 
@@ -127,7 +127,7 @@ fn test_main_file_modified_exits_failure() {
         ".pre-commit-config.yaml",
         "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n",
     );
-    let status = bin()
+    let status = create_test_command()
         .arg("--dir")
         .arg(dir.path())
         .arg("--config")
@@ -150,7 +150,7 @@ fn test_main_no_change_exits_success() {
         ".pre-commit-config.yaml",
         "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n    additional_dependencies:\n    - mypy>=1.0\n",
     );
-    let status = bin()
+    let status = create_test_command()
         .arg("--dir")
         .arg(dir.path())
         .arg("--config")
@@ -170,7 +170,7 @@ fn test_main_run_error_exits_failure() {
         ".pre-commit-config.yaml",
         "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n",
     );
-    let status = bin()
+    let status = create_test_command()
         .arg("--dir")
         .arg(dir.path())
         .arg("--config")
