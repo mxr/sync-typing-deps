@@ -54,7 +54,7 @@ jobs:
     - uses: taiki-e/install-action@bffeee26d4db9be238a4ea78d8826604ebcb594d # v2.82.5
       with:
         tool: cargo-llvm-cov
-    - run: cargo llvm-cov --locked --fail-under-lines 100 --ignore-filename-regex 'src/main\.rs'
+    - run: cargo llvm-cov --locked --fail-under-lines 100
 
   main:
     needs: [changes, lint-real, test-real]
