@@ -18,9 +18,9 @@ repos:
   rev: 33ae92ed9b1a4392c8ac5fdef46887640d866e1e  # frozen: 0.5.0
   hooks:
   - id: cargo-fmt
-    additional_dependencies: ['serde_json:1.0.150']
+    additional_dependencies: [serde_json:1.0.150]
   - id: cargo-clippy
-    additional_dependencies: ['serde_json:1.0.150']
+    additional_dependencies: [serde_json:1.0.150]
     args:
     - --all-targets
     - --locked
