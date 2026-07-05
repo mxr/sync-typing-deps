@@ -13,12 +13,6 @@ cov: _install-llvm-cov
 cov-html: _install-llvm-cov
     cargo llvm-cov --locked --fail-under-lines 100 --open --ignore-filename-regex 'src/main\.rs'
 
-lint:
-    cargo clippy -- -D warnings
-
-fmt:
-    cargo fmt
-
 build:
     cargo build --locked
 
