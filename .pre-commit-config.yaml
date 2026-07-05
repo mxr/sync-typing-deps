@@ -1,3 +1,6 @@
+ci:
+  skip: [clippy] # runs via GHA to avoid keeping deps in-sync here
+
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
@@ -19,8 +22,11 @@ repos:
   hooks:
   - id: cargo-fmt
     additional_dependencies: [serde_json:1.0.150]
-  - id: cargo-clippy
-    additional_dependencies: [serde_json:1.0.150]
+- repo: https://github.com/doublify/pre-commit-rust
+  rev: eeee35a89e69d5772bdee97db1a6a898467b686e  # frozen: v1.0
+  hooks:
+  - id: fmt
+  - id: clippy
     args:
     - --all-targets
     - --locked
