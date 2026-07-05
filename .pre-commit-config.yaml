@@ -17,15 +17,10 @@ repos:
 - repo: https://github.com/AndrejOrsula/pre-commit-cargo
   rev: 33ae92ed9b1a4392c8ac5fdef46887640d866e1e  # frozen: 0.5.0
   hooks:
-<<<<<<< HEAD
   - id: cargo-fmt
     additional_dependencies: ['serde_json:1.0.150']
   - id: cargo-clippy
     additional_dependencies: ['serde_json:1.0.150']
-    args: [--locked, --, -D, warnings]
-=======
-  - id: fmt
-  - id: clippy
     args:
     - --all-targets
     - --locked
@@ -38,7 +33,6 @@ repos:
     - clippy::nursery
     - -D
     - clippy::cargo
->>>>>>> origin/main
 - repo: https://github.com/zizmorcore/zizmor-pre-commit
   rev: e3eebf65325ccc992422292cb7a4baee967cf815  # frozen: v1.26.1
   hooks:
