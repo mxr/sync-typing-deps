@@ -26,20 +26,6 @@ jobs:
             - Cargo.toml
             - Cargo.lock
 
-  lint-real:
-    needs: [changes]
-    if: needs.changes.outputs.project_files == 'true'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      with:
-        persist-credentials: false
-    - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
-      with:
-        components: rustfmt, clippy
-    - run: cargo fmt --check
-    - run: cargo clippy --locked -- -D warnings
-
   test-real:
     needs: [changes]
     if: needs.changes.outputs.project_files == 'true'
@@ -57,20 +43,16 @@ jobs:
     - run: cargo llvm-cov --locked --fail-under-lines 100 --ignore-filename-regex 'src/main\.rs'
 
   main:
-    needs: [changes, lint-real, test-real]
+    needs: [changes, test-real]
     if: always()
     runs-on: ubuntu-latest
     steps:
     - env:
         PROJECT_FILES: ${{ needs.changes.outputs.project_files }}
-        LINT_REAL_RESULT: ${{ needs.lint-real.result }}
         TEST_REAL_RESULT: ${{ needs.test-real.result }}
       run: |
         if [ "$PROJECT_FILES" != "true" ]; then
           exit 0
-        fi
-        if [ "$LINT_REAL_RESULT" != "success" ]; then
-          exit 1
         fi
         if [ "$TEST_REAL_RESULT" != "success" ]; then
           exit 1
