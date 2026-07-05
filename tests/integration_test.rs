@@ -1,4 +1,5 @@
 use std::fs;
+use std::process::Command;
 
 use tempfile::TempDir;
 
@@ -99,4 +100,82 @@ fn test_run_idempotent() {
 
     let updated = run(dir.path(), &dir.path().join(".pre-commit-config.yaml")).unwrap();
     assert!(!updated, "second run should be a no-op");
+}
+
+// Binary invocation tests – these cover fn main() paths.
+
+fn create_test_command() -> Command {
+    Command::new(env!("CARGO_BIN_EXE_sync-typing-deps"))
+}
+
+#[test]
+fn test_main_unknown_arg_exits_failure() {
+    let status = create_test_command().arg("--unknown").status().unwrap();
+    assert!(!status.success());
+}
+
+#[test]
+fn test_main_file_modified_exits_failure() {
+    let dir = TempDir::new().unwrap();
+    write(
+        &dir,
+        "pyproject.toml",
+        "[dependency-groups]\ndev = [\"mypy>=1.0\"]\n",
+    );
+    write(
+        &dir,
+        ".pre-commit-config.yaml",
+        "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n",
+    );
+    let status = create_test_command()
+        .arg("--dir")
+        .arg(dir.path())
+        .arg("--config")
+        .arg(dir.path().join(".pre-commit-config.yaml"))
+        .status()
+        .unwrap();
+    assert!(!status.success());
+}
+
+#[test]
+fn test_main_no_change_exits_success() {
+    let dir = TempDir::new().unwrap();
+    write(
+        &dir,
+        "pyproject.toml",
+        "[dependency-groups]\ndev = [\"mypy>=1.0\"]\n",
+    );
+    write(
+        &dir,
+        ".pre-commit-config.yaml",
+        "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n    additional_dependencies:\n    - mypy>=1.0\n",
+    );
+    let status = create_test_command()
+        .arg("--dir")
+        .arg(dir.path())
+        .arg("--config")
+        .arg(dir.path().join(".pre-commit-config.yaml"))
+        .status()
+        .unwrap();
+    assert!(status.success());
+}
+
+#[test]
+fn test_main_run_error_exits_failure() {
+    let dir = TempDir::new().unwrap();
+    // setup.cfg as a directory triggers an IO error in find_deps
+    fs::create_dir(dir.path().join("setup.cfg")).unwrap();
+    write(
+        &dir,
+        ".pre-commit-config.yaml",
+        "repos:\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n",
+    );
+    let status = create_test_command()
+        .arg("--dir")
+        .arg(dir.path())
+        .arg("--config")
+        .arg(dir.path().join(".pre-commit-config.yaml"))
+        .status()
+        .unwrap();
+    assert!(!status.success());
 }

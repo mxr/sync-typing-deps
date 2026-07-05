@@ -2,11 +2,18 @@ use std::path::Path;
 
 use crate::Error;
 
+#[must_use]
 pub fn is_typing_hook(repo_url: &str, hook_id: &str) -> bool {
     (hook_id == "mypy" && repo_url.contains("mirrors-mypy"))
         || (hook_id == "ty" && repo_url.contains("mirrors-ty"))
 }
 
+/// Update typing-hook `additional_dependencies` in a pre-commit config file.
+///
+/// # Errors
+///
+/// Returns an error when the config cannot be read, is invalid YAML, does not
+/// contain the expected top-level structure, or cannot be written back.
 pub fn update_config(config_path: &Path, deps: &[String]) -> Result<bool, Error> {
     let content = std::fs::read_to_string(config_path)?;
 
@@ -21,11 +28,11 @@ pub fn update_config(config_path: &Path, deps: &[String]) -> Result<bool, Error>
 
     let new_content = rewrite_additional_deps(&content, &sorted_deps);
 
-    if new_content != content {
+    if new_content == content {
+        Ok(false)
+    } else {
         std::fs::write(config_path, new_content)?;
         Ok(true)
-    } else {
-        Ok(false)
     }
 }
 
@@ -66,10 +73,12 @@ fn rewrite_additional_deps(content: &str, sorted_deps: &[String]) -> String {
 
         if significant {
             // List items (- repo: / - id: / other list items) share the leading '-'.
-            if let Some(rest) = trimmed.strip_prefix('-').map(|r| r.trim_start()) {
+            if let Some(rest) = trimmed.strip_prefix('-').map(str::trim_start) {
                 if let Some(url) = rest.strip_prefix("repo:") {
-                    repo_url = url.trim().trim_matches('"').trim_matches('\'').to_owned();
-                    out.push(line.to_owned());
+                    url.trim()
+                        .trim_matches('"')
+                        .trim_matches('\'')
+                        .clone_into(&mut repo_url);
                 } else if let Some(id_raw) = rest.strip_prefix("id:") {
                     let id = id_raw
                         .trim()
@@ -79,10 +88,8 @@ fn rewrite_additional_deps(content: &str, sorted_deps: &[String]) -> String {
                     hook_id = Some(id);
                     hook_field_indent = indent + 2;
                     dep_injected = false;
-                    out.push(line.to_owned());
-                } else {
-                    out.push(line.to_owned());
                 }
+                out.push(line.to_owned());
             } else if indent == hook_field_indent
                 && trimmed.starts_with("additional_dependencies:")
                 && hook_id
@@ -241,30 +248,15 @@ mod tests {
         assert!(out.contains("    - a\n    - z\n"));
     }
 
-    #[test]
-    fn test_rewrite_replaces_compact_notation() {
-        // Compact notation: deps at same indent as key.
-        let input = mypy_config("    additional_dependencies:\n    - old\n");
+    #[rstest]
+    #[case("    additional_dependencies:\n    - old\n", "old")]
+    #[case("    additional_dependencies:\n      - old\n", "old")]
+    #[case("    additional_dependencies: [old-dep]\n", "old-dep")]
+    fn test_rewrite_replaces_existing_dep(#[case] extra: &str, #[case] old_dep: &str) {
+        let input = mypy_config(extra);
         let out = rewrite_additional_deps(&input, &["new".to_owned()]);
         assert!(out.contains("    additional_dependencies:\n    - new\n"));
-        assert!(!out.contains("old"));
-    }
-
-    #[test]
-    fn test_rewrite_replaces_indented_notation() {
-        // Standard notation: deps indented 2 more than key.
-        let input = mypy_config("    additional_dependencies:\n      - old\n");
-        let out = rewrite_additional_deps(&input, &["new".to_owned()]);
-        assert!(out.contains("    additional_dependencies:\n    - new\n"));
-        assert!(!out.contains("old"));
-    }
-
-    #[test]
-    fn test_rewrite_replaces_flow_style() {
-        let input = mypy_config("    additional_dependencies: [old-dep]\n");
-        let out = rewrite_additional_deps(&input, &["new".to_owned()]);
-        assert!(out.contains("    additional_dependencies:\n    - new\n"));
-        assert!(!out.contains("old-dep"));
+        assert!(!out.contains(old_dep));
     }
 
     #[test]
@@ -276,9 +268,18 @@ mod tests {
 
     #[test]
     fn test_rewrite_preserves_comments() {
-        let input = format!(
-            "# top comment\nrepos:\n# repo comment\n- repo: https://github.com/pre-commit/mirrors-mypy\n  rev: v1.0.0\n  hooks:\n  - id: mypy\n    additional_dependencies:\n    - old\n"
-        );
+        let input = concat!(
+            "# top comment\n",
+            "repos:\n",
+            "# repo comment\n",
+            "- repo: https://github.com/pre-commit/mirrors-mypy\n",
+            "  rev: v1.0.0\n",
+            "  hooks:\n",
+            "  - id: mypy\n",
+            "    additional_dependencies:\n",
+            "    - old\n",
+        )
+        .to_string();
         let out = rewrite_additional_deps(&input, &["new".to_owned()]);
         assert!(out.starts_with("# top comment\n"));
         assert!(out.contains("# repo comment\n"));
@@ -292,34 +293,28 @@ mod tests {
         assert_eq!(out, input);
     }
 
-    #[test]
-    fn test_rewrite_empty_deps_removes_block() {
-        let input = mypy_config("    additional_dependencies:\n    - old\n");
+    #[rstest]
+    #[case("    additional_dependencies:\n    - old\n")]
+    #[case("")]
+    fn test_rewrite_empty_deps(#[case] extra: &str) {
+        let input = mypy_config(extra);
         let out = rewrite_additional_deps(&input, &[]);
         assert!(!out.contains("additional_dependencies:"));
         assert!(!out.contains("old"));
     }
 
-    #[test]
-    fn test_rewrite_empty_deps_no_block_added() {
-        let input = mypy_config("");
-        let out = rewrite_additional_deps(&input, &[]);
-        assert!(!out.contains("additional_dependencies:"));
-    }
-
-    #[test]
-    fn test_rewrite_preserves_trailing_newline() {
-        let input = mypy_config("");
-        assert!(input.ends_with('\n'));
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn test_rewrite_trailing_newline(#[case] has_trailing_newline: bool) {
+        let base = mypy_config("");
+        let input = if has_trailing_newline {
+            base
+        } else {
+            base.trim_end_matches('\n').to_owned()
+        };
         let out = rewrite_additional_deps(&input, &["dep".to_owned()]);
-        assert!(out.ends_with('\n'));
-    }
-
-    #[test]
-    fn test_rewrite_no_trailing_newline() {
-        let input = mypy_config("").trim_end_matches('\n').to_owned();
-        let out = rewrite_additional_deps(&input, &["dep".to_owned()]);
-        assert!(!out.ends_with('\n'));
+        assert_eq!(out.ends_with('\n'), has_trailing_newline);
     }
 
     #[test]

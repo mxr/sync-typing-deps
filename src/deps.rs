@@ -5,6 +5,12 @@ use crate::Error;
 
 const TYPING_SUBSTITUTIONS: &[(&str, &str)] = &[("homeassistant", "homeassistant-stubs")];
 
+/// Find dependency strings from the supported project metadata files in `cwd`.
+///
+/// # Errors
+///
+/// Returns an error when a supported dependency source exists but cannot be
+/// read or parsed.
 pub fn find_deps(cwd: &Path) -> Result<Vec<String>, Error> {
     let mut deps = Vec::new();
     let setup_cfg = cwd.join("setup.cfg");
@@ -31,7 +37,7 @@ pub fn find_deps(cwd: &Path) -> Result<Vec<String>, Error> {
         let name = normalize_pkg_name(dep_name(dep));
         for &(from, to) in TYPING_SUBSTITUTIONS {
             if name == from {
-                *dep = to.to_owned();
+                to.clone_into(dep);
                 break;
             }
         }
@@ -292,6 +298,7 @@ fn nonempty_lines(s: &str) -> Vec<String> {
 mod tests {
     use std::fs;
 
+    use rstest::rstest;
     use tempfile::TempDir;
 
     use super::*;
@@ -351,19 +358,12 @@ mod tests {
         assert!(!sections.contains_key("mysection"));
     }
 
-    #[test]
-    fn test_nonempty_lines_empty() {
-        assert_eq!(nonempty_lines(""), Vec::<String>::new());
-    }
-
-    #[test]
-    fn test_nonempty_lines_whitespace_only() {
-        assert_eq!(nonempty_lines("  \n  \n"), Vec::<String>::new());
-    }
-
-    #[test]
-    fn test_nonempty_lines_trims_and_filters() {
-        assert_eq!(nonempty_lines("a\n  b  \n\nc"), vec!["a", "b", "c"]);
+    #[rstest]
+    #[case("", Vec::<String>::new())]
+    #[case("  \n  \n", Vec::<String>::new())]
+    #[case("a\n  b  \n\nc", vec!["a".to_owned(), "b".to_owned(), "c".to_owned()])]
+    fn test_nonempty_lines(#[case] input: &str, #[case] expected: Vec<String>) {
+        assert_eq!(nonempty_lines(input), expected);
     }
 
     #[test]
@@ -596,19 +596,12 @@ mod tests {
         assert!(deps.is_empty());
     }
 
-    #[test]
-    fn test_find_deps_setup_cfg_unreadable() {
-        // setup.cfg exists as a directory → read_to_string fails → ? propagates.
+    #[rstest]
+    #[case("setup.cfg")]
+    #[case("pyproject.toml")]
+    fn test_find_deps_unreadable_file(#[case] filename: &str) {
         let dir = TempDir::new().unwrap();
-        fs::create_dir(dir.path().join("setup.cfg")).unwrap();
-        assert!(find_deps(dir.path()).is_err());
-    }
-
-    #[test]
-    fn test_find_deps_pyproject_toml_unreadable() {
-        // pyproject.toml exists as a directory → read_to_string fails → ? propagates.
-        let dir = TempDir::new().unwrap();
-        fs::create_dir(dir.path().join("pyproject.toml")).unwrap();
+        fs::create_dir(dir.path().join(filename)).unwrap();
         assert!(find_deps(dir.path()).is_err());
     }
 
@@ -662,10 +655,11 @@ mod tests {
         assert_eq!(dep_name(input), expected);
     }
 
-    #[test]
-    fn test_normalize_pkg_name() {
-        assert_eq!(normalize_pkg_name("Cov_Defaults"), "cov-defaults");
-        assert_eq!(normalize_pkg_name("cov.defaults"), "cov-defaults");
+    #[rstest]
+    #[case("Cov_Defaults", "cov-defaults")]
+    #[case("cov.defaults", "cov-defaults")]
+    fn test_normalize_pkg_name(#[case] input: &str, #[case] expected: &str) {
+        assert_eq!(normalize_pkg_name(input), expected);
     }
 
     #[test]
