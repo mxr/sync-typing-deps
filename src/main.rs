@@ -56,6 +56,8 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
 
     fn string_args(v: &[&str]) -> impl Iterator<Item = String> {
@@ -74,43 +76,29 @@ mod tests {
         assert_eq!(a.dir, PathBuf::from("."));
     }
 
-    #[test]
-    fn test_parse_args_long_config() {
-        let a = parse_args(string_args(&["--config", "my.yaml"])).unwrap();
+    #[rstest]
+    #[case("--config")]
+    #[case("-c")]
+    fn test_parse_args_config_flag(#[case] flag: &str) {
+        let a = parse_args(string_args(&[flag, "my.yaml"])).unwrap();
         assert_eq!(a.config, PathBuf::from("my.yaml"));
     }
 
-    #[test]
-    fn test_parse_args_short_config() {
-        let a = parse_args(string_args(&["-c", "my.yaml"])).unwrap();
-        assert_eq!(a.config, PathBuf::from("my.yaml"));
-    }
-
-    #[test]
-    fn test_parse_args_long_dir() {
-        let a = parse_args(string_args(&["--dir", "/some/path"])).unwrap();
+    #[rstest]
+    #[case("--dir")]
+    #[case("-d")]
+    fn test_parse_args_dir_flag(#[case] flag: &str) {
+        let a = parse_args(string_args(&[flag, "/some/path"])).unwrap();
         assert_eq!(a.dir, PathBuf::from("/some/path"));
     }
 
-    #[test]
-    fn test_parse_args_short_dir() {
-        let a = parse_args(string_args(&["-d", "/some/path"])).unwrap();
-        assert_eq!(a.dir, PathBuf::from("/some/path"));
-    }
-
-    #[test]
-    fn test_parse_args_config_missing_value() {
+    #[rstest]
+    #[case("--config", "--config requires a value")]
+    #[case("--dir", "--dir requires a value")]
+    fn test_parse_args_missing_value(#[case] arg: &str, #[case] expected_err: &str) {
         assert_eq!(
-            parse_args(string_args(&["--config"])).unwrap_err(),
-            "--config requires a value"
-        );
-    }
-
-    #[test]
-    fn test_parse_args_dir_missing_value() {
-        assert_eq!(
-            parse_args(string_args(&["--dir"])).unwrap_err(),
-            "--dir requires a value"
+            parse_args(string_args(&[arg])).unwrap_err(),
+            expected_err
         );
     }
 
