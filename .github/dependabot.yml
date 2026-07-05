@@ -1,7 +1,7 @@
 version: 2
 
 multi-ecosystem-groups:
-  all:
+  default:
     schedule:
       interval: daily
 
@@ -16,7 +16,7 @@ updates:
       - '*'
   cooldown:
     default-days: 7
-  multi-ecosystem-group: all
+  multi-ecosystem-group: default
 
 - package-ecosystem: cargo
   directory: /
@@ -28,4 +28,4 @@ updates:
       - '*'
   cooldown:
     default-days: 7
-  multi-ecosystem-group: all
+  multi-ecosystem-group: default
