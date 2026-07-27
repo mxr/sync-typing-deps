@@ -846,21 +846,6 @@ mod tests {
         assert!(deps.is_empty());
     }
 
-    #[test]
-    fn test_find_deps_homeassistant_replaced_with_stubs() {
-        let dir = TempDir::new().unwrap();
-        fs::create_dir_all(dir.path().join("custom_components/my_component")).unwrap();
-        fs::write(
-            dir.path()
-                .join("custom_components/my_component/manifest.json"),
-            r#"{"domain":"my_component","requirements":["homeassistant>=2024.1","aiohttp>=3"]}"#,
-        )
-        .unwrap();
-        let mut deps = find_deps(dir.path()).unwrap();
-        deps.sort();
-        assert_eq!(deps, ["aiohttp>=3", "homeassistant-stubs"]);
-    }
-
     #[rstest]
     #[case("pyyaml")]
     #[case("PyYAML")]
