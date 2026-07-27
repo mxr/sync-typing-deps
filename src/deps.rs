@@ -854,11 +854,12 @@ mod tests {
         let dir = TempDir::new().unwrap();
         fs::write(
             dir.path().join("pyproject.toml"),
-            format!("[project]\ndependencies = [\"{name}>=6.0\"]\n"),
+            format!("[project]\ndependencies = [\"{name}>=6.0\", \"aiohttp>=3\"]\n"),
         )
         .unwrap();
-        let deps = find_deps(dir.path()).unwrap();
-        assert_eq!(deps, ["types-PyYAML"]);
+        let mut deps = find_deps(dir.path()).unwrap();
+        deps.sort();
+        assert_eq!(deps, ["aiohttp>=3", "types-PyYAML"]);
     }
 
     #[test]
