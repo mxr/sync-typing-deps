@@ -1,4 +1,6 @@
 #![deny(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
+// transitive deps pull duplicate syn versions (2.x vs 3.x) until they all migrate
+#![allow(clippy::multiple_crate_versions)]
 
 use std::path::PathBuf;
 use std::process::ExitCode;
