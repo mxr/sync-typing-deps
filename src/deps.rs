@@ -3,7 +3,41 @@ use std::path::Path;
 
 use crate::Error;
 
-const TYPING_SUBSTITUTIONS: &[(&str, &str)] = &[("homeassistant", "homeassistant-stubs")];
+// `from` is matched case-insensitively (see `normalize_pkg_name`); `to` is
+// substituted verbatim, so its casing must match the actual PyPI project name.
+const TYPING_SUBSTITUTIONS: &[(&str, &str)] = &[
+    ("cachetools", "types-cachetools"),
+    ("croniter", "types-croniter"),
+    ("decorator", "types-decorator"),
+    ("defusedxml", "types-defusedxml"),
+    ("docutils", "types-docutils"),
+    ("homeassistant", "homeassistant-stubs"),
+    ("html5lib", "types-html5lib"),
+    ("httplib2", "types-httplib2"),
+    ("jsonschema", "types-jsonschema"),
+    ("markdown", "types-Markdown"),
+    ("mock", "types-mock"),
+    ("paramiko", "types-paramiko"),
+    ("pexpect", "types-pexpect"),
+    ("protobuf", "types-protobuf"),
+    ("psycopg2", "types-psycopg2"),
+    ("pycurl", "types-pycurl"),
+    ("pymysql", "types-PyMySQL"),
+    ("pynput", "types-pynput"),
+    ("pyserial", "types-pyserial"),
+    ("python-dateutil", "types-python-dateutil"),
+    ("pytz", "types-pytz"),
+    ("pyyaml", "types-PyYAML"),
+    ("regex", "types-regex"),
+    ("send2trash", "types-Send2Trash"),
+    ("setuptools", "types-setuptools"),
+    ("simplejson", "types-simplejson"),
+    ("six", "types-six"),
+    ("tabulate", "types-tabulate"),
+    ("toml", "types-toml"),
+    ("waitress", "types-waitress"),
+    ("xmltodict", "types-xmltodict"),
+];
 
 /// Find dependency strings from the supported project metadata files in `cwd`.
 ///
@@ -825,6 +859,21 @@ mod tests {
         let mut deps = find_deps(dir.path()).unwrap();
         deps.sort();
         assert_eq!(deps, ["aiohttp>=3", "homeassistant-stubs"]);
+    }
+
+    #[rstest]
+    #[case("pyyaml")]
+    #[case("PyYAML")]
+    #[case("PYYAML")]
+    fn test_find_deps_pyyaml_replaced_case_insensitively(#[case] name: &str) {
+        let dir = TempDir::new().unwrap();
+        fs::write(
+            dir.path().join("pyproject.toml"),
+            format!("[project]\ndependencies = [\"{name}>=6.0\"]\n"),
+        )
+        .unwrap();
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["types-PyYAML"]);
     }
 
     #[test]
