@@ -2,21 +2,6 @@ ci:
   skip: [clippy] # runs via GHA to avoid keeping deps in-sync here
 
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
-  hooks:
-  - id: check-toml
-  - id: check-yaml
-  - id: end-of-file-fixer
-  - id: trailing-whitespace
-- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: 4380fbb73a154b5f5624794c1c78d9719ccc860f  # frozen: v2.16.0
-  hooks:
-  - id: pretty-format-toml
-    args: [--autofix, --trailing-commas]
-    exclude: Cargo.lock
-  - id: pretty-format-yaml
-    args: [--autofix]
 - repo: https://github.com/AndrejOrsula/pre-commit-cargo
   rev: 33ae92ed9b1a4392c8ac5fdef46887640d866e1e  # frozen: 0.5.0
   hooks:
@@ -24,7 +9,6 @@ repos:
 - repo: https://github.com/doublify/pre-commit-rust
   rev: eeee35a89e69d5772bdee97db1a6a898467b686e  # frozen: v1.0
   hooks:
-  - id: fmt
   - id: clippy
     args:
     - --all-targets
@@ -38,14 +22,30 @@ repos:
     - clippy::nursery
     - -D
     - clippy::cargo
-- repo: https://github.com/zizmorcore/zizmor-pre-commit
-  rev: 067260dc5fe6ea86b7551bfd6f8b3ba4e6c93129  # frozen: v1.28.0
+  - id: fmt
+- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
+  rev: 4380fbb73a154b5f5624794c1c78d9719ccc860f  # frozen: v2.16.0
   hooks:
-  - id: zizmor
-    args: [--no-progress, --fix]
+  - id: pretty-format-toml
+    args: [--autofix, --trailing-commas]
+    exclude: Cargo.lock
+  - id: pretty-format-yaml
+    args: [--autofix]
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+  hooks:
+  - id: check-toml
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
 - repo: https://github.com/rhysd/actionlint
   rev: 914e7df21a07ef503a81201c76d2b11c789d3fca  # frozen: v1.7.12
   hooks:
   - id: actionlint
     additional_dependencies:
     - github.com/wasilibs/go-shellcheck/cmd/shellcheck@latest
+- repo: https://github.com/zizmorcore/zizmor-pre-commit
+  rev: 067260dc5fe6ea86b7551bfd6f8b3ba4e6c93129  # frozen: v1.28.0
+  hooks:
+  - id: zizmor
+    args: [--no-progress, --fix]
