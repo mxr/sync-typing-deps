@@ -8,6 +8,10 @@ repos:
   rev: 33ae92ed9b1a4392c8ac5fdef46887640d866e1e  # frozen: 0.5.0
   hooks:
   - id: cargo-fmt
+- repo: https://github.com/biomejs/pre-commit
+  rev: 8a54093106c1c85f977afbb95ada8685786a2999  # frozen: v2.5.11
+  hooks:
+  - id: biome-check
 - repo: https://github.com/doublify/pre-commit-rust
   rev: eeee35a89e69d5772bdee97db1a6a898467b686e  # frozen: v1.0
   hooks:
@@ -50,3 +54,12 @@ repos:
   hooks:
   - id: zizmor
     args: [--no-progress, --fix]
+- repo: local
+  hooks:
+  - id: biome-schema-version
+    name: biome schema version
+    entry: |-
+      python3 -c 'import re, pathlib; cfg = pathlib.Path(".pre-commit-config.yaml").read_text(); ver = re.search(r"biomejs/pre-commit.*?frozen: v([0-9.]+)", cfg, re.S)[1]; p = pathlib.Path("biome.json"); p.write_text(re.sub(r"schemas/[^/]+/schema\.json", f"schemas/{ver}/schema.json", p.read_text()))'
+    language: python
+    files: ^(biome\.json|\.pre-commit-config\.yaml)$
+    pass_filenames: false
