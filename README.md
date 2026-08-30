@@ -1,6 +1,6 @@
 # sync-typing-deps
 
-Keeps `additional_dependencies` in your [mirrors-mypy](https://github.com/pre-commit/mirrors-mypy) and [mirrors-ty](https://github.com/mxr/mirrors-ty) pre-commit hooks in sync with your project's dev dependencies.
+Keeps `additional_dependencies` in your Python typing pre-commit hooks in sync with your project's dev dependencies.
 
 ## Usage
 
@@ -27,7 +27,7 @@ sync-typing-deps [--config <path>] [--dir <path>]
 - `--config` / `-c`: path to `.pre-commit-config.yaml` (default: `.pre-commit-config.yaml`)
 - `--dir` / `-d`: directory to search for dep files (default: `.`)
 
-Exits with code `1` if the config was modified (pre-commit convention), `0` if already up to date.
+Returns `1` if config is updated and `0` otherwise.
 
 ## Supported dep sources
 
@@ -44,7 +44,7 @@ Exits with code `1` if the config was modified (pre-commit convention), `0` if a
 
 ## Coverage plugin exclusion
 
-Dependencies listed as coverage plugins are automatically excluded from `additional_dependencies`. Coverage plugins are not type-checking tools and should not be injected into mypy/ty hooks.
+Dependencies listed as coverage plugins are automatically excluded from `additional_dependencies`. Coverage plugins are not type-checking tools and should not be injected into hooks.
 
 Plugin names are read from:
 
@@ -99,5 +99,6 @@ Hooks matched:
 
 - `id: mypy` in a repo whose URL contains `mirrors-mypy`
 - `id: ty` in a repo whose URL contains `mirrors-ty`
+- `id: pyright` in a repo whose URL contains `pyright-python`
 
 `additional_dependencies` is rewritten as a sorted block list. Comments and unrelated YAML formatting are preserved.
