@@ -65,7 +65,7 @@ fn rewrite_additional_deps(content: &str, sorted_deps: &[String]) -> String {
         if significant && indent < hook_field_indent {
             if let Some(ref id) = hook_id {
                 if !dep_injected && is_typing_hook(&repo_url, id) {
-                    inject_deps(&mut out, hook_field_indent, sorted_deps);
+                    inject_deps(&mut out, hook_field_indent, &deps_for_hook(id, sorted_deps));
                 }
                 hook_id = None;
                 dep_injected = false;
@@ -97,7 +97,8 @@ fn rewrite_additional_deps(content: &str, sorted_deps: &[String]) -> String {
                     .as_deref()
                     .is_some_and(|id| is_typing_hook(&repo_url, id))
             {
-                inject_deps(&mut out, hook_field_indent, sorted_deps);
+                let id = hook_id.as_deref().unwrap_or_default();
+                inject_deps(&mut out, hook_field_indent, &deps_for_hook(id, sorted_deps));
                 dep_injected = true;
                 i += 1;
                 // Skip the existing dep block: blank lines, comments, lines more
@@ -131,7 +132,7 @@ fn rewrite_additional_deps(content: &str, sorted_deps: &[String]) -> String {
     // End-of-file: flush the final hook if it never saw additional_dependencies.
     if let Some(ref id) = hook_id {
         if !dep_injected && is_typing_hook(&repo_url, id) {
-            inject_deps(&mut out, hook_field_indent, sorted_deps);
+            inject_deps(&mut out, hook_field_indent, &deps_for_hook(id, sorted_deps));
         }
     }
 
@@ -140,6 +141,32 @@ fn rewrite_additional_deps(content: &str, sorted_deps: &[String]) -> String {
         result.push('\n');
     }
     result
+}
+
+/// pyright ships its actual binary via npm, so the `nodejs` extra vendors a
+/// node runtime into the hook's venv — without it pyright fetches node from
+/// the network on every run, which fails in offline/sandboxed CI.
+///
+/// Kept first in the list (ahead of the alphabetic sort) since it isn't a
+/// type stub like the rest and reads better as the "this is why pyright
+/// works offline" entry.
+fn deps_for_hook(hook_id: &str, deps: &[String]) -> Vec<String> {
+    if hook_id != "pyright" {
+        let mut deps = deps.to_vec();
+        deps.sort_unstable();
+        return deps;
+    }
+
+    let mut rest: Vec<String> = deps
+        .iter()
+        .filter(|d| *d != "pyright[nodejs]")
+        .cloned()
+        .collect();
+    rest.sort_unstable();
+
+    let mut deps = vec!["pyright[nodejs]".to_owned()];
+    deps.extend(rest);
+    deps
 }
 
 fn inject_deps(out: &mut Vec<String>, indent: usize, sorted_deps: &[String]) {
@@ -375,6 +402,35 @@ mod tests {
         )
         .unwrap();
         assert!(updated);
+
+        let content = fs::read_to_string(dir.path().join(".pre-commit-config.yaml")).unwrap();
+        assert!(content.contains("- mypy>=1.0"));
+        assert!(content.contains("- pyright[nodejs]"));
+
+        let nodejs_pos = content.find("- pyright[nodejs]").unwrap();
+        let mypy_pos = content.find("- mypy>=1.0").unwrap();
+        assert!(
+            nodejs_pos < mypy_pos,
+            "pyright[nodejs] should sort first, ahead of alphabetically-earlier deps"
+        );
+    }
+
+    #[test]
+    fn test_update_config_pyright_nodejs_not_duplicated() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            ".pre-commit-config.yaml",
+            "repos:\n- repo: https://github.com/RobertCraigie/pyright-python\n  rev: v1.1.0\n  hooks:\n  - id: pyright\n",
+        );
+        update_config(
+            &dir.path().join(".pre-commit-config.yaml"),
+            &["pyright[nodejs]".to_owned()],
+        )
+        .unwrap();
+
+        let content = fs::read_to_string(dir.path().join(".pre-commit-config.yaml")).unwrap();
+        assert_eq!(content.matches("pyright[nodejs]").count(), 1);
     }
 
     #[test]
