@@ -99,6 +99,6 @@ Hooks matched:
 
 - `id: mypy` in a repo whose URL contains `mirrors-mypy`
 - `id: ty` in a repo whose URL contains `mirrors-ty`
-- `id: pyright` in a repo whose URL contains `pyright-python`
+- `id: pyright` in a repo whose URL contains `mirrors-pyright`
 
 `additional_dependencies` is rewritten as a sorted block list. Comments and unrelated YAML formatting are preserved.
