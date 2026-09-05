@@ -6,7 +6,7 @@ use crate::Error;
 pub fn is_typing_hook(repo_url: &str, hook_id: &str) -> bool {
     (hook_id == "mypy" && repo_url.contains("mirrors-mypy"))
         || (hook_id == "ty" && repo_url.contains("mirrors-ty"))
-        || (hook_id == "pyright" && repo_url.contains("pyright-python"))
+        || (hook_id == "pyright" && repo_url.contains("mirrors-pyright"))
 }
 
 /// Update typing-hook `additional_dependencies` in a pre-commit config file.
@@ -175,12 +175,8 @@ mod tests {
     #[case("https://github.com/mxr/mirrors-ty", "ty", true)]
     #[case("https://github.com/mxr/mirrors-ty", "check-something", false)]
     #[case("https://github.com/pre-commit/pre-commit-hooks", "check-json", false)]
-    #[case("https://github.com/RobertCraigie/pyright-python", "pyright", true)]
-    #[case(
-        "https://github.com/RobertCraigie/pyright-python",
-        "check-something",
-        false
-    )]
+    #[case("https://github.com/mxr/mirrors-pyright", "pyright", true)]
+    #[case("https://github.com/mxr/mirrors-pyright", "check-something", false)]
     #[case("https://example.com/some-repo", "pyright", false)]
     fn test_is_typing_hook(#[case] url: &str, #[case] id: &str, #[case] expected: bool) {
         assert_eq!(is_typing_hook(url, id), expected);
@@ -367,7 +363,7 @@ mod tests {
         write(
             &dir,
             ".pre-commit-config.yaml",
-            "repos:\n- repo: https://github.com/RobertCraigie/pyright-python\n  rev: v1.1.0\n  hooks:\n  - id: pyright\n",
+            "repos:\n- repo: https://github.com/mxr/mirrors-pyright\n  rev: v1.1.0\n  hooks:\n  - id: pyright\n",
         );
         let updated = update_config(
             &dir.path().join(".pre-commit-config.yaml"),
