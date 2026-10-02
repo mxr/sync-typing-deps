@@ -429,7 +429,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         write(&dir, "setup.cfg", "[metadata]\nname = foo\n");
         let deps = parse_setup_cfg(&dir.path().join("setup.cfg")).unwrap();
-        assert!(deps.is_empty());
+        assert_eq!(deps, Vec::<String>::new());
     }
 
     #[test]
@@ -442,7 +442,7 @@ mod tests {
             "[options]\nsetup_requires = setuptools\n",
         );
         let deps = parse_setup_cfg(&dir.path().join("setup.cfg")).unwrap();
-        assert!(deps.is_empty());
+        assert_eq!(deps, Vec::<String>::new());
     }
 
     #[test]
@@ -598,7 +598,7 @@ mod tests {
             "[build-system]\nbuild-backend = \"setuptools.build_meta\"\n",
         );
         let deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
-        assert!(deps.is_empty());
+        assert_eq!(deps, Vec::<String>::new());
     }
 
     #[test]
@@ -606,7 +606,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         write(&dir, "pyproject.toml", "[tool]\n");
         let deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
-        assert!(deps.is_empty());
+        assert_eq!(deps, Vec::<String>::new());
     }
 
     #[test]
@@ -627,7 +627,7 @@ mod tests {
     fn test_find_deps_no_files() {
         let dir = TempDir::new().unwrap();
         let deps = find_deps(dir.path()).unwrap();
-        assert!(deps.is_empty());
+        assert_eq!(deps, Vec::<String>::new());
     }
 
     #[rstest]
@@ -820,7 +820,7 @@ mod tests {
         )
         .unwrap();
         let deps = find_deps(dir.path()).unwrap();
-        assert!(deps.is_empty());
+        assert_eq!(deps, Vec::<String>::new());
     }
 
     #[test]
@@ -834,7 +834,7 @@ mod tests {
         let dir = TempDir::new().unwrap();
         fs::create_dir_all(dir.path().join("custom_components/no_manifest")).unwrap();
         let deps = find_deps(dir.path()).unwrap();
-        assert!(deps.is_empty());
+        assert_eq!(deps, Vec::<String>::new());
     }
 
     #[test]
@@ -843,7 +843,7 @@ mod tests {
         fs::create_dir(dir.path().join("custom_components")).unwrap();
         fs::write(dir.path().join("custom_components/not_a_dir"), "").unwrap();
         let deps = find_deps(dir.path()).unwrap();
-        assert!(deps.is_empty());
+        assert_eq!(deps, Vec::<String>::new());
     }
 
     #[rstest]
