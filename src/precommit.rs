@@ -188,7 +188,7 @@ mod tests {
     fn test_inject_deps_empty() {
         let mut out = Vec::new();
         inject_deps(&mut out, 4, &[]);
-        assert!(out.is_empty());
+        assert_eq!(out, Vec::<String>::new());
     }
 
     #[test]
