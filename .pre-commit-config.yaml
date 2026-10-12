@@ -57,7 +57,7 @@ repos:
   - id: actionlint
     additional_dependencies: [github.com/wasilibs/go-shellcheck/cmd/shellcheck@latest]
 - repo: https://github.com/tombi-toml/tombi-pre-commit
-  rev: 3e7d0dfbb244888710ccd530be67a5983bf21c1e  # frozen: v1.7.2
+  rev: 0d5fcb91ac3b9ebc04fddc5331601511fd744701  # frozen: v1.8.2
   hooks:
   - id: tombi-format
     args: [--offline, --quiet]
