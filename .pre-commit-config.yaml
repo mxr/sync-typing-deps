@@ -9,7 +9,7 @@ repos:
   hooks:
   - id: cargo-fmt
 - repo: https://github.com/biomejs/pre-commit
-  rev: d1d67cb1a73ea0917eb553c4f025e212c8cd0465  # frozen: v2.5.15
+  rev: 9043c78f09d0d322ff458336dcb1aefcdfdbb8a0  # frozen: v2.6.3
   hooks:
   - id: biome-check
 - repo: https://github.com/doublify/pre-commit-rust
@@ -57,7 +57,7 @@ repos:
   - id: actionlint
     additional_dependencies: [github.com/wasilibs/go-shellcheck/cmd/shellcheck@latest]
 - repo: https://github.com/tombi-toml/tombi-pre-commit
-  rev: 7c1739b6be770a7ccc8170a43993ccbb8e19dfb9  # frozen: v1.8.9
+  rev: b3f6e09de51290a21d6c7b05b4f5cbe6cfe65b4f  # frozen: v1.9.6
   hooks:
   - id: tombi-format
     args: [--offline, --quiet]
