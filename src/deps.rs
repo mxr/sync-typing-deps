@@ -577,6 +577,16 @@ mod tests {
         assert_eq!(deps, ["mypy"]);
     }
 
+    #[rstest]
+    #[case("[project]\ndependencies = [\"mypy\", 1]\n")]
+    #[case("[build-system]\nrequires = [\"mypy\", 1]\n")]
+    fn test_parse_pyproject_non_string_item(#[case] content: &str) {
+        let dir = TempDir::new().unwrap();
+        write(&dir, "pyproject.toml", content);
+        let deps = parse_pyproject_toml(&dir.path().join("pyproject.toml")).unwrap();
+        assert_eq!(deps, ["mypy"]);
+    }
+
     #[test]
     fn test_parse_pyproject_build_system_requires() {
         let dir = TempDir::new().unwrap();
@@ -752,6 +762,18 @@ mod tests {
     }
 
     #[test]
+    fn test_find_deps_coverage_plugin_pyproject_non_string_item() {
+        let dir = TempDir::new().unwrap();
+        write(
+            &dir,
+            "pyproject.toml",
+            "[dependency-groups]\ndev = [\"mypy\", \"covdefaults\"]\n\n[tool.coverage.run]\nplugins = [\"covdefaults\", 1]\n",
+        );
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["mypy"]);
+    }
+
+    #[test]
     fn test_find_deps_excludes_coverage_plugin_multiline() {
         let dir = TempDir::new().unwrap();
         write(
@@ -807,6 +829,20 @@ mod tests {
         .unwrap();
         let deps = find_deps(dir.path()).unwrap();
         assert_eq!(deps, ["aiosqlite~=0.21.0", "requests>=2.0"]);
+    }
+
+    #[test]
+    fn test_parse_manifest_json_non_string_item() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir_all(dir.path().join("custom_components/my_component")).unwrap();
+        fs::write(
+            dir.path()
+                .join("custom_components/my_component/manifest.json"),
+            r#"{"domain":"my_component","requirements":["requests",1]}"#,
+        )
+        .unwrap();
+        let deps = find_deps(dir.path()).unwrap();
+        assert_eq!(deps, ["requests"]);
     }
 
     #[test]
