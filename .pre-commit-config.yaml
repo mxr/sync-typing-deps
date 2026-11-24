@@ -29,12 +29,6 @@ repos:
     - -D
     - clippy::cargo
   - id: fmt
-- repo: https://github.com/hukkin/mdformat
-  rev: 2d496dbc18e31b83a1596685347ffe0b6041daf0  # frozen: 1.0.0
-  hooks:
-  - id: mdformat
-    args: [--number, --wrap, '120']
-    additional_dependencies: [mdformat-footnote, mdformat-gfm, mdformat-gfm-alerts]
 - repo: https://github.com/lorenzwalthert/gitignore-tidy
   rev: 1c69ff10567d7de6ce5e291ddf13c522a9007deb  # frozen: 0.1.3
   hooks:
