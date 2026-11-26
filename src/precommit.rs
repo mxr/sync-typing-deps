@@ -19,7 +19,7 @@ pub fn update_config(config_path: &Path, deps: &[String]) -> Result<bool, Error>
     let content = std::fs::read_to_string(config_path)?;
 
     // Validate YAML structure before doing anything.
-    let doc: serde_yaml::Value = serde_yaml::from_str(&content)?;
+    let doc: serde_norway::Value = serde_norway::from_str(&content)?;
     doc.get("repos")
         .and_then(|r| r.as_sequence())
         .ok_or_else(|| Error::Config("missing 'repos' sequence".into()))?;
